@@ -1,6 +1,6 @@
 <?php
 // Clave secreta del webhook
-const WEBHOOK_SECRET = 'TU_WEBHOOK_KEY';
+const WEBHOOK_SECRET = "WEBHOOK_KEY";
 
 /**
  * Verifica la firma del webhook.
@@ -26,7 +26,7 @@ if (!verifySignature($request_body, $signature)) {
 
 $data = json_decode($request_body, true);
 
-// Verificar si el evento es una creación de ticket
+// check if the new event is a creation of ticket
 if ($data['event'] === 'ticket:create') {
     // Procesar los datos del ticket
     $fecha = $data['time'];
@@ -43,11 +43,10 @@ if ($data['event'] === 'ticket:create') {
     $apimessage = 'Tawk Ticket Id: ' . $ticket_id . PHP_EOL . $message;
 
     // URL del punto final de la API REST de GLPI
-    $GLPI_API_URL = "https://(TU_URL_GLPI)/apirest.php";
-    $GLPI_API_USER_TOKEN = "TU_USER_TOKEN";
-    $GLPI_API_APP_TOKEN = "TU_APP_TOKEN";
+    $GLPI_API_URL = "GLPI API DIRECTION"; //EXAMPLE https://host/apirest.php
+    $GLPI_API_USER_TOKEN = "USER TOKEN"; //MAKE SURE TO HAVE ADMIN PRIVILEGES 
+    $GLPI_API_APP_TOKEN = "APP TOKEN";  //YOU CAN FOUND IT IN THE API CLIENT SECTION JUST BELOW THE API URL
 
-    // Cabeceras de la solicitud para las peticiones a la API de GLPI
     $headers = array(
         "Content-Type: application/json"
     );
@@ -62,8 +61,39 @@ if ($data['event'] === 'ticket:create') {
     )));
     $sessionToken2 = json_decode($sessionToken2, true);
     $sessionToken2 = $sessionToken2['session_token'];
+    
+    
+    /**
+     * Encuentra el ID de ubicación por nombre.
+     *
+     * @param array $locations Array de ubicaciones.
+     * @param string $reqname Nombre de la ubicación a buscar.
+     * @return int|null Devuelve el ID de la ubicación si hay coincidencia, de lo contrario null.
+     */
+    function findLocationIdByName($locations, $reqname) {
+        foreach ($locations as $locat) {
+            if (like_match('%'. $reqname .'%',$locat['name']) == 1) {
+                return $locat['id'];
+            }
+        }
+        return null; // Si no se encuentra la entidad por defecto
+    }
 
-    // Petición de ubicación
+    /**
+     * Operador SQL Like en PHP.
+     *
+     * @param string $pattern Patrón de búsqueda.
+     * @param string $subject Cadena a comparar.
+     * @return bool Devuelve TRUE si hay coincidencia, de lo contrario FALSE.
+     */
+    function like_match($pattern, $subject)
+    {
+        $pattern = str_replace('%', '.*', preg_quote($pattern, '/'));
+        return (bool) preg_match("/^{$pattern}$/i", $subject);
+    }
+    
+
+ // Petición de ubicación
     $url =$GLPI_API_URL . "/Location?session_token=" . $sessionToken2 . "&app_token=" . $GLPI_API_APP_TOKEN . "&range=0-10000";
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -86,7 +116,7 @@ if ($data['event'] === 'ticket:create') {
             if ($locations === null) {
                 echo 'Error al decodificar la respuesta JSON';
             } else {
-                // Buscar el ID de la entidad por su nombre
+                // Search the location ID by name
                 $UbiId = findLocationIdByName($locations,$reqname);
                 if ($UbiId === null) {
                     echo 'No se encontró la entidad por el nombre especificado';
@@ -97,37 +127,9 @@ if ($data['event'] === 'ticket:create') {
 
     curl_close($ch);
 
-    /**
-     * Encuentra el ID de ubicación por nombre.
-     *
-     * @param array $locations Array de ubicaciones.
-     * @param string $reqname Nombre de la ubicación a buscar.
-     * @return int|null Devuelve el ID de la ubicación si hay coincidencia, de lo contrario null.
-     */
-    function findLocationIdByName($locations, $reqname) {
-        // Si no se encuentra la entidad, devuelve el id de la entidad "Infraestructura de Terceros" que es la default
-        foreach ($locations as $locat) {
-            if (like_match('%'. $reqname .'%',$locat['name']) == 1) {
-                return $locat['id'];
-            }
-        }
-        return null; // Si no se encuentra la entidad por defecto
-    }
 
-    /**
-     * Operador SQL Like en PHP.
-     *
-     * @param string $pattern Patrón de búsqueda.
-     * @param string $subject Cadena a comparar.
-     * @return bool Devuelve TRUE si hay coincidencia, de lo contrario FALSE.
-     */
-    function like_match($pattern, $subject)
-    {
-        $pattern = str_replace('%', '.*', preg_quote($pattern, '/'));
-        return (bool) preg_match("/^{$pattern}$/i", $subject);
-    }
+ // Petición de creación de ticket
 
-    // Petición de creación de ticket
     $data = array(
         "input" => array(
             "name" => $subject,         // Título
