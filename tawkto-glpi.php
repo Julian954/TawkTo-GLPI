@@ -141,7 +141,7 @@ if ($data['event'] === 'ticket:create') {
             "impact" => "3",            // ID Impacto
             "priority" => "3",          // ID Prioridad
             "type" => "2",              // ID Tipo
-            "requesttype" => "9",       // ID Origen
+            "requesttypes_id" => "9",       // ID Origen
             "itilcategory" => "25",     // ID Categoría
             "locations_id" => $UbiId    // ID Tercero
         )
